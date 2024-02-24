@@ -1,11 +1,29 @@
 #install.packages("readxl")
+install.packages("ggplot2")
+install.packages("dplyr")
 library("readxl")
-library(tibble)
-yuxi_data = read_excel('/Users/yuxichen/biostat620/project1/data_yuxi.xlsx')
-meng_data = read_excel('/Users/yuxichen/biostat620/project1/data_meng.xlsx')
-mary_data = read_excel('/Users/yuxichen/biostat620/project1/data_mary.xlsx')
-whole_data = read_excel('/Users/yuxichen/biostat620/project1/data_whole.xlsx')
+yuxi_data = read_excel('/Users/maggiexu/Documents/620project/data_yuxi.xlsx')
+meng_data = read_excel('/Users/maggiexu/Documents/620project/data_meng.xlsx')
+mary_data = read_excel('/Users/maggiexu/Documents/620project/data_mary.xlsx')
+whole_data = read_excel('/Users/maggiexu/Documents/620project/data_whole.xlsx')
 
+#data description
+library(ggplot2)
+library(dplyr)
+head(whole_data)
+social_screen_time_stats <- whole_data %>%
+  group_by(procrastination) %>%
+  summarise(mean = mean(SocialSTmin))
+
+ggplot(whole_data, aes(x =SocialSTmin , y = procrastination)) +
+  geom_point(color = "blue") +
+  labs(title = "Scatter Plot of Procrastination Scores and Social Screen Time",
+       x = "Social Screen Time (minutes)",
+       y = "Procrastination Scores") +
+  theme_minimal()+
+  geom_vline(data = social_screen_time_stats, aes(xintercept = mean, color = "Mean"), linetype = "dashed") +
+  scale_color_manual(name = "Statistics", values = c("Mean" = "red"))
+                     
 #create interaction term for individual data
 yuxi_data$SocialSTmin_lag1_procrast = yuxi_data$SocialSTmin_lag1 * yuxi_data$procrastination
 meng_data$SocialSTmin_lag1_procrast = meng_data$SocialSTmin_lag1 * meng_data$procrastination
@@ -15,6 +33,8 @@ mary_data$SocialSTmin_lag1_procrast = mary_data$SocialSTmin_lag1 * mary_data$pro
 yuxi_data = add_column(yuxi_data, d = 1, .before = "Pickups")
 meng_data = add_column(meng_data, d = 1, .before = "Pickups")
 mary_data = add_column(mary_data, d = 1, .before = "Pickups")
+
+library(tibble)
 
 #yuxi_data = subset(yuxi_data, select = -c(gender) )
 #meng_data = subset(meng_data, select = -c(gender) )
@@ -31,11 +51,11 @@ y3 = data.matrix(mary_data[1])
 
 ##analysis data a little bit, conclude: all data for social screen time seem to be temporal independent.
 #yuxi: almost temporal independent
-acf(yuxi_data$SocialSTmin)
+acf(yuxi_data$SocialSTmin,main = "ACF Plot for Social Screen Time (member1)")
 #meng: temporal independent
-acf(meng_data$SocialSTmin)
+acf(meng_data$SocialSTmin,main = "ACF Plot for Social Screen Time (member2)")
 #mary: alsotemporal independent
-acf(mary_data$SocialSTmin)
+acf(mary_data$SocialSTmin,main = "ACF Plot for Social Screen Time (member3)")
 
 #now, let us begin federated learning.
 ##############################first, coefficient for beta_zero: basically add one to the X matrix
@@ -116,13 +136,4 @@ model_aic = AIC(model)
 average_y = (sum(y1) + sum(y2) + sum(y3)) / 81
 tss = sum_squarey - 81 * average_y^2
 r_square = 1 - (rss/(81-6))/(tss/(81-1))
-
-#########plot model diagnostic
-plot(model)
-
-library(equatiomatic)
-extract_eq(model)
-
-
-par(mfrow = c(2, 2))
-plot(model)
+model_summary
