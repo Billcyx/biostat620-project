@@ -1,0 +1,60 @@
+---
+title: "620 project2"
+author: "xiaomeng xu"
+date: "2024-04-12"
+output: html_document
+---
+
+```{r}
+install.packages("readxl")
+install.packages("dplyr")
+```
+
+```{r}
+library(readxl)
+library(dplyr)
+excel_file <- "/Users/maggiexu/Documents/620project/620 project 2/Fulldata_620W24_Project2-1.xlsx"
+
+data1 <- read_excel(excel_file, sheet = "screentime")
+data2 <- read_excel(excel_file, sheet = "baseline")
+merged_data <- left_join(data1, data2, by = "pseudo_id")
+merged_data
+```
+
+
+```{r}
+# delete total.st/social.st
+ new_data<- merged_data[, -c(which(names(merged_data) == "Total.ST"), which(names(merged_data) == "Social.ST"))]
+
+# add a new variable "phase"
+new_data$phase <- ifelse(is.na(new_data$compliance), "baseline",
+                            ifelse(new_data$compliance %in% c(0, 1), "treatment", NA))
+
+print(new_data)
+```
+
+```{r}
+new_data$compliance[new_data$Treatment == "A" & new_data$Total.ST.min > 200] <- 0
+new_data$compliance[new_data$Treatment == "A" & new_data$Total.ST.min <= 200] <- 1
+new_data$compliance[new_data$Treatment == "B" & new_data$Pickups > 50] <- 0
+new_data$compliance[new_data$Treatment == "B" & new_data$Pickups <= 50] <- 1
+
+
+# Create a new variable 'phase number' based on conditions
+new_data$phase_number <- ifelse(new_data$phase == "baseline", 0, 
+                           ifelse(new_data$phase == "treatment" & new_data$Treatment == "A", 1,
+                                  ifelse(new_data$phase == "treatment" & new_data$Treatment == "B", 2, NA)))
+
+# Keep data from 2024.1.17-4.2
+new_data= new_data[new_data$Date >= as.Date("2024-01-17") & new_data$Date <= as.Date("2024-04-02"), ]
+
+new_data
+```
+
+```{r}
+install.packages("openxlsx")
+library(openxlsx)
+
+write.xlsx(new_data, "output.xlsx", rowNames = FALSE)
+```
+
